@@ -16,7 +16,6 @@ RUN apk add --no-cache \
     build-base \
     gcc \
     make \
-    git \
     ca-certificates \
     libevent-dev \
     openssl-dev \
@@ -26,7 +25,8 @@ RUN apk add --no-cache \
 
 # Clone aprsc source code from GitHub
 WORKDIR /tmp
-RUN git clone https://github.com/hessu/aprsc.git
+
+ADD https://github.com/hessu/aprsc.git aprsc
 
 # Compile and install
 WORKDIR /tmp/aprsc/src
@@ -55,8 +55,8 @@ RUN apk add --no-cache \
 COPY --from=builder /tmp/aprsc-install /
 
 # Create aprsc user and group
-RUN addgroup -S aprsc && \
-    adduser -S -D -H -h /var/run/aprsc -s /sbin/nologin -G aprsc aprsc
+RUN addgroup -g 1000 -S aprsc && \
+    adduser -u 1000 -S -D -H -h /var/run/aprsc -s /sbin/nologin -G aprsc aprsc
 
 # Copy example configuration file from builder stage
 COPY --from=builder /tmp/aprsc/src/aprsc.conf /etc/aprsc/aprsc.conf.example
@@ -81,6 +81,9 @@ EXPOSE 14580 10152 8080 8080/udp 14501
 # Set working directory
 WORKDIR /var/run/aprsc
 
+# Run as non-root user (aprsc)
+USER aprsc
+
 # Use tini and entrypoint script
 ENTRYPOINT ["/sbin/tini", "--", "/usr/local/bin/entrypoint.sh"]
 
@@ -90,5 +93,5 @@ HEALTHCHECK --interval=30s --timeout=10s --retries=3 --start-period=40s \
 
 # Start aprsc
 # Configuration will be auto-generated from environment variables if not provided
-# -u aprsc: Run as aprsc user (secure)
-CMD ["/opt/aprsc/sbin/aprsc", "-c", "/etc/aprsc/aprsc.conf", "-u", "aprsc"]
+# Container already runs as aprsc user (USER directive above)
+CMD ["/opt/aprsc/sbin/aprsc", "-c", "/etc/aprsc/aprsc.conf"]

@@ -146,5 +146,9 @@ else
     echo "Using existing configuration file: $CONFIG_FILE"
 fi
 
+# Create runtime directories (needed because /var/run/aprsc is tmpfs)
+mkdir -p /var/run/aprsc/logs
+ln -sf /opt/aprsc/web /var/run/aprsc/web
+
 # Execute aprsc with all arguments
 exec "$@"
